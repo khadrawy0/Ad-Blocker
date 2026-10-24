@@ -14,20 +14,20 @@ final class DnsCache {
     private static final int MIN_TTL = 20;
     private static final int MAX_TTL = 600;
 
-    private static final class Entry {
+    private static final class CacheEntry {
         final byte[] resp;
         final long expiresAt;
 
-        Entry(byte[] resp, long expiresAt) {
+        CacheEntry(byte[] resp, long expiresAt) {
             this.resp = resp;
             this.expiresAt = expiresAt;
         }
     }
 
-    private final LinkedHashMap<String, Entry> map =
-            new LinkedHashMap<String, Entry>(64, 0.75f, true) {
+    private final LinkedHashMap<String, CacheEntry> map =
+            new LinkedHashMap<String, CacheEntry>(64, 0.75f, true) {
                 @Override
-                protected boolean removeEldestEntry(Map.Entry<String, Entry> eldest) {
+                protected boolean removeEldestEntry(Map.Entry<String, CacheEntry> eldest) {
                     return size() > MAX_ENTRIES;
                 }
             };
@@ -38,7 +38,7 @@ final class DnsCache {
 
     /** يرجّع نسخة من الرد الأصلي بعد ما يبدّل رقم الاستعلام (ID) برقم الطلب الحالي، أو null. */
     synchronized byte[] get(String key, int id, long nowMs) {
-        Entry e = map.get(key);
+        CacheEntry e = map.get(key);
         if (e == null) return null;
         if (nowMs >= e.expiresAt) {
             map.remove(key);
@@ -60,7 +60,7 @@ final class DnsCache {
         if (ttl > MAX_TTL) ttl = MAX_TTL;
         byte[] copy = new byte[len];
         System.arraycopy(resp, 0, copy, 0, len);
-        map.put(key, new Entry(copy, nowMs + ttl * 1000L));
+        map.put(key, new CacheEntry(copy, nowMs + ttl * 1000L));
     }
 
     synchronized void clear() {
